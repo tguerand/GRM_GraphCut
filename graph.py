@@ -2,6 +2,8 @@ import cv2
 import numpy as np
 from PIL import Image
 
+from apply_min_cut import FordFulkerson
+
 
 class Graph:
     def __init__(self, sink_node):
@@ -19,6 +21,14 @@ class Graph:
 
 
 def create_graph_from_images(img_path, gamma, fore, back):
+    """
+    Return graphs computed with source is foreground and sink is background
+    :param img_path: Img path
+    :param gamma: factor to compute on the exponential for weights between nodes
+    :param fore: area of the foreground in the image to compute weight between node and source
+    :param back: area of the background in the image to compute weight between node and sink
+    :return:
+    """
     I = Image.open(img_path).convert('L')  # read image
 
     If = np.array(I.crop(fore))  # take a part of the foreground
@@ -80,4 +90,4 @@ if __name__ == '__main__':
     fore = (225, 142, 279, 185)
     back = (7, 120, 61, 163)
     g = create_graph_from_images('input1.jpeg', gamma, fore, back)
-    print(g.graph)
+    print(FordFulkerson(g.graph, len(g.graph[0])-2, len(g.graph[0])-1))
