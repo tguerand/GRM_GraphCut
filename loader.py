@@ -47,9 +47,9 @@ class Loader:
 
         self.df['geom'] = self.df.apply(extract_pixels_from_polygons, axis=1)
 
-    def save_final_df(self):
+    def save_final_df(self, out_path='df_with_polygons_as_pixels.csv'):
         self.preprocess()
-        self.df[['ImageId', 'geom', 'Xmax', 'Ymin']].to_csv('df_with_polygons_as_pixels.csv', index=False)
+        self.df[['ImageId', 'geom', 'Xmax', 'Ymin']].to_csv(out_path, index=False)
 
 
 if __name__ == '__main__':
