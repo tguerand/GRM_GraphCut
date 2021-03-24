@@ -30,12 +30,32 @@ def plot_poly(df, poly_idx, data_path='dataset', out_path='out.png'):
     
     img = Image.open(os.path.join(data_path, img_id + '.tif'))
     
+    
     img2 = img.copy()
     draw = ImageDraw.Draw(img2)
     draw.polygon(po, fill = "wheat")
     
     img3 = Image.blend(img, img2, 0.5)
-    img3.save('out.png')
+    img3.save(out_path)
+    
+def plot_polys(df, class_type, img_id, data_path='dataset', out_path='out.png'):
+
+    polys = []
+    
+    for pol in df['geom'][(df['ImageId']==img_id) & (df['ClassType']==class_type)].values:
+        polys.append(ast.literal_eval(pol))
+    
+    img = Image.open(os.path.join(data_path, img_id + '.tif'))
+    
+    
+    img2 = img.copy()
+    draw = ImageDraw.Draw(img2)
+    for po in polys:
+        draw.polygon(po, fill = "wheat")
+    
+    img3 = Image.blend(img, img2, 0.5)
+    img3.save(out_path)
+    
 
 if __name__ == '__main__':
 
@@ -49,7 +69,7 @@ if __name__ == '__main__':
     
     df_poly = pd.read_csv(df_path)
     
-    plot_poly(df_poly, 60000)
+    plot_polys(df_poly, 4, '6040_2_2')
         
     
     
