@@ -19,6 +19,24 @@ from PIL import ImageDraw
 
 from loader import Loader
 
+def plot_poly(df, poly_idx, data_path='dataset', out_path='out.png'):
+    
+    po = ast.literal_eval(df['geom'].iloc[poly_idx])
+    
+    
+    
+    img_id = df['ImageId'].iloc[poly_idx]
+    
+    
+    img = Image.open(os.path.join(data_path, img_id + '.tif'))
+    
+    img2 = img.copy()
+    draw = ImageDraw.Draw(img2)
+    draw.polygon(po, fill = "wheat")
+    
+    img3 = Image.blend(img, img2, 0.5)
+    img3.save('out.png')
+
 if __name__ == '__main__':
 
 
@@ -31,24 +49,7 @@ if __name__ == '__main__':
     
     df_poly = pd.read_csv(df_path)
     
-    polys = []
-    
-    for index in df_poly.index:
-        polys.append(df_poly.iloc[index]['geom'])
+    plot_poly(df_poly, 60000)
         
-    po = ast.literal_eval(polys[0])
     
-    img_id = df_poly['ImageId'].iloc[0]
-    
-    # po = Polygon(po)
-    # x,y = po.exterior.xy
-    
-    img = Image.open(os.path.join(data_path, img_id + '.tif'))
-    
-    img2 = img.copy()
-    draw = ImageDraw.Draw(img2)
-    draw.polygon(po, fill = "wheat")
-    
-    img3 = Image.blend(img, img2, 0.5)
-    img3.save('/tmp/out.png')
     
