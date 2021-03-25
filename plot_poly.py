@@ -8,12 +8,14 @@ Created on Wed Mar 24 16:46:49 2021
 import os
 
 import matplotlib.pyplot as plt
-import tifffile as tif
+import tifffile as tiff
 import numpy as np
 import pandas as pd
 import ast
 
-from shapely.geometry.polygon import Polygon
+from matplotlib.patches import Circle, Wedge, Polygon
+from matplotlib.collections import PatchCollection
+
 from PIL import Image
 from PIL import ImageDraw
 
@@ -40,7 +42,8 @@ def plot_poly(df, poly_idx, data_path='dataset', out_path='out.png'):
     img_id = df['ImageId'].iloc[poly_idx]
     
     
-    img = Image.open(os.path.join(data_path, img_id + '.tif'))
+    img = tiff.imread(os.path.join(data_path, img_id + '.tif'))
+    img = Image.fromarray(img)
     
     
     img2 = img.copy()
@@ -67,20 +70,26 @@ def plot_polys(df, class_type, img_id, data_path='dataset', out_path='out.png'):
     out_path: str
         path where the output image is saved"""
     polys = []
+    patches = []
     
-    for pol in df['geom'][(df['ImageId']==img_id) & (df['ClassType']==class_type)].valuesgi:
+    for pol in df['geom'][(df['ImageId']==img_id) & (df['ClassType']==class_type)].values:
         polys.append(ast.literal_eval(pol))
     
-    img = Image.open(os.path.join(data_path, img_id + '.tif'))
+        patches.append(Polygon(polys[-1]))
+    
+    P = tiff.imread(os.path.join(data_path, img_id + '.tif'))
+    tiff.imshow(P)
+    
+    ax = plt.gca()
+    
+    colors = 100 * np.random.rand(len(patches))
+    p = PatchCollection(patches, alpha=0.4)
+    p.set_array(colors)
+    ax.add_collection(p)
+    
+    plt.show()
     
     
-    img2 = img.copy()
-    draw = ImageDraw.Draw(img2)
-    for po in polys:
-        draw.polygon(po, fill = "wheat")
-    
-    img3 = Image.blend(img, img2, 0.5)
-    img3.save(out_path)
     
 
 if __name__ == '__main__':
@@ -95,7 +104,10 @@ if __name__ == '__main__':
     
     df_poly = pd.read_csv(df_path)
     
-    plot_polys(df_poly, 4, '6040_2_2')
+    image_id = '6170_4_1'
+    class_type = 5
+    
+    plot_polys(df_poly, class_type, image_id)
         
     
     
