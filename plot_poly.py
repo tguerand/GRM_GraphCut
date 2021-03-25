@@ -37,21 +37,25 @@ def plot_poly(df, poly_idx, data_path='dataset', out_path='out.png'):
         path where the output image is saved"""
     po = ast.literal_eval(df['geom'].iloc[poly_idx])
     
+   
+    patches = [Polygon(po)]
+    
+    img_id = df.iloc[poly_idx]['ImageId']
+    
+    P = tiff.imread(os.path.join(data_path, img_id + '.tif'))
+    tiff.imshow(P)
+    
+    ax = plt.gca()
+    
+    colors = 100 * np.random.rand(len(patches))
+    p = PatchCollection(patches, alpha=0.4)
+    p.set_array(colors)
+    ax.add_collection(p)
     
     
-    img_id = df['ImageId'].iloc[poly_idx]
+    plt.savefig(out_path)
+    plt.show()
     
-    
-    img = tiff.imread(os.path.join(data_path, img_id + '.tif'))
-    img = Image.fromarray(img)
-    
-    
-    img2 = img.copy()
-    draw = ImageDraw.Draw(img2)
-    draw.polygon(po, fill = "wheat")
-    
-    img3 = Image.blend(img, img2, 0.5)
-    img3.save(out_path)
     
 def plot_polys(df, class_type, img_id, data_path='dataset', out_path='out.png'):
     """Plot all the polygons of a single image of a single class
@@ -87,6 +91,8 @@ def plot_polys(df, class_type, img_id, data_path='dataset', out_path='out.png'):
     p.set_array(colors)
     ax.add_collection(p)
     
+    
+    plt.savefig(out_path)
     plt.show()
     
     
@@ -104,10 +110,11 @@ if __name__ == '__main__':
     
     df_poly = pd.read_csv(df_path)
     
-    image_id = '6170_4_1'
-    class_type = 5
+    image_id = '6100_2_2'
+    class_type = 1
     
     plot_polys(df_poly, class_type, image_id)
         
+    # Cool images: 6100_2_2
     
     

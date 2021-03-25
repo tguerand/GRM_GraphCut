@@ -48,7 +48,36 @@ class Loader:
         self.df['geom'] = self.df.apply(extract_pixels_from_polygons, axis=1)
 
     def save_final_df(self, out_path='df_with_polygons_as_pixels.csv'):
+        """
+        ClassTypes:
+            1 - Buildings - large building, residential, non-residential, fuel storage facility, fortified building
+            2 - Misc. Manmade structures 
+            3 - Road 
+            4 - Track - poor/dirt/cart track, footpath/trail
+            5 - Trees - woodland, hedgerows, groups of trees, standalone trees
+            6 - Crops - contour ploughing/cropland, grain (wheat) crops, row (potatoes, turnips) crops
+            7 - Waterway 
+            8 - Standing water
+            9 - Vehicle Large - large vehicle (e.g. lorry, truck,bus), logistics vehicle
+            10 - Vehicle Small - small vehicle (car, van), motorbike
+
+        We will keep only the buildings, the roads and the forest
+            it is the classes: 1, 3, 4 and 5
+
+        """
+        
+        
+        
         self.preprocess()
+        
+        classes_to_keep = [1, 3, 4, 5]
+        classes = range(1,11)
+        
+        for cl in classes:
+            if cl in classes_to_keep:
+                continue
+            idx = self.df.index[self.df['ClassType']==cl].tolist()
+            self.df = self.df.drop(idx)
         
         self.df[['ImageId', 'geom', 'ClassType', 'Xmax', 'Ymin']].to_csv(out_path, index=False)
 
