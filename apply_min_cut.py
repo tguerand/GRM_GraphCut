@@ -1,11 +1,12 @@
 from _collections import deque
 import numpy as np
+from numba import jit
 
 gamma = 0.001
 fore = (225, 142, 279, 185)
 back = (7, 120, 61, 163)
 
-
+@jit(nopython=True)
 def BFS(graph, s, t, parent):
     # Mark all the vertices as not visited
     ROW = len(graph[0])
@@ -35,7 +36,7 @@ def BFS(graph, s, t, parent):
     # If we reached sink in BFS starting from source, then return true, else false
     return True if visited[t] else False
 
-
+@jit(nopython=True)
 def FordFulkerson(graph, source, sink):
     """
     :param graph: graph with nodes and edges from create_graph_from_images
