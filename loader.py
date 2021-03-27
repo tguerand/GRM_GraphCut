@@ -83,4 +83,4 @@ class Loader:
 
 
 if __name__ == '__main__':
-    Loader('train_wkt_dataset.csv', 'grid_sizes_dataset.csv').save_final_df()
+    Loader('df/train_wkt_dataset.csv', 'df/grid_sizes_dataset.csv').save_final_df()
