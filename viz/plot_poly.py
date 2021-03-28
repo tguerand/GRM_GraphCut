@@ -51,9 +51,9 @@ def plot_poly(df, poly_idx, data_path='dataset', out_path='out.png'):
     p = PatchCollection(patches, alpha=0.4)
     p.set_array(colors)
     ax.add_collection(p)
+    ax.set_axis_off()
     
-    
-    plt.savefig(out_path)
+    plt.savefig(out_path, bbox_inches='tight',pad_inches = 0)
     plt.show()
     
     
@@ -91,8 +91,10 @@ def plot_polys(df, class_type, img_id, data_path='dataset', out_path='out.png'):
     p.set_array(colors)
     ax.add_collection(p)
     
+    ax.set_axis_off()
     
-    plt.savefig(out_path)
+    plt.savefig(out_path, bbox_inches='tight',pad_inches = 0)
+    
     plt.show()
     
     
@@ -101,8 +103,8 @@ def plot_polys(df, class_type, img_id, data_path='dataset', out_path='out.png'):
 if __name__ == '__main__':
 
 
-    data_path = 'dataset' 
-    df_path = 'df_with_polygons_as_pixels.csv'
+    data_path = r'../dataset' 
+    df_path = r'../df/df_with_polygons_as_pixels.csv'
     
     if not(os.path.exists(df_path)):
         Loader('train_wkt_dataset.csv',
@@ -113,7 +115,7 @@ if __name__ == '__main__':
     image_id = '6100_2_2'
     class_type = 1
     
-    plot_polys(df_poly, class_type, image_id)
+    plot_polys(df_poly, class_type, image_id, data_path=data_path)
         
     # Cool images: 6100_2_2
     
