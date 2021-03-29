@@ -10,8 +10,15 @@ import matplotlib.pyplot as plt
 import cv2
 from PIL import Image
 import numpy as np
+from shapely.geometry import Polygon, MultiPolygon
+from collections import defaultdict
+
+
+from tqdm import tqdm
 import os
 import pandas as pd
+import ast
+
 from plot_poly import plot_poly
 from loader import Loader
 
@@ -54,7 +61,7 @@ def crop(tiff_img, ratio, out_path):
     # fig.savefig('figure.png', dpi=1)
 
 
-def fit_poly(img_path, df_path, dir_path):
+def fit_poly(img_path, df_path, dir_path, threshold=25):
     """Match the polygone size to the jpg image
     
     Args
@@ -66,27 +73,91 @@ def fit_poly(img_path, df_path, dir_path):
     """
     df = pd.read_csv(df_path)
     
-    jpg_img = np.asarray(Image.open(img_path))
+    jpg_img = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
     img_id = img_path.split('.')[-2].split(r'/')[-1]
     
-    for poly_idx in df['geom'][df['ImageId'] == img_id].index.tolist():
-        name = os.path.join(dir_path, img_id + 'red_poly.jpg')
-        plot_poly(df, poly_idx, data_path='../dataset', out_path=name)
-        jpg_poly = np.asarray(Image.open(name))
-        mask = abs(jpg_img - jpg_poly)
-        mask[np.where(mask > 0)] = 1
-        img, contours, _ = cv2.findContours(mask, cv2.RER_TREE, cv2.CHAIN_APPROX_SIMPLE)
-        print(contours)
-        coords = np.column_stack(np.where(mask > 0))
-        print(coords)
-        df['geom_red'][poly_idx] = coords
-    print(df.columns)
-    df.to_csv(df_path)
-
+    df = df.astype({'geom_red':object})
     
+    
+    for poly_idx in tqdm(df['geom'][df['ImageId'] == img_id].index.tolist()):
+        name = os.path.join(dir_path, img_id + 'red_poly.jpg')
+        plot_poly(df, poly_idx, data_path='../dataset/tiff', out_path=name)
+        jpg_poly = cv2.imread(name, cv2.IMREAD_GRAYSCALE)
+        mask = cv2.absdiff(jpg_img, jpg_poly)
+        
+        polygones = mask_to_polygons(mask) 
+        polys = list(polygones)
+        for i in range(len(polys)):
+            polys[i] = polys[i].exterior.coords.xy
+            polys[i] = [ [polys[i][0][j],
+                          polys[i][1][j] ] for j in range(len( polys[i][0]))]
+        df['geom_red'][poly_idx] = polys
+        # arr_str = df['geom_red'][poly_idx]
+        # print(arr_str)
+        # arr_str = arr_str.replace('\n', '')[1:-1]
+        # arr_l = arr_str.split('array')[1:]
+        # for i in range(len(arr_l)):
+        #     arr_l[i] = ast.literal_eval(arr_l[i].replace(',dtype=int32', ''))
+        #     arr_l[i] = arr_l[i][0][0]
+        # print(arr_l)
+        
+    
+    df[['ImageId', 'geom', 'ClassType', 'Xmax', 'Ymin', 'geom_red']].to_csv(df_path, index=False)
+
+  
+    
+def mask_to_polygons(mask, epsilon=1, min_area=1.):
+    # __author__ = Konstantin Lopuhin
+    # https://www.kaggle.com/lopuhin/dstl-satellite-imagery-feature-detection/full-pipeline-demo-poly-pixels-ml-poly
+
+    # first, find contours with cv2: it's much faster than shapely
+    contours, hierarchy = cv2.findContours(
+        ((mask == 1) * 255).astype(np.uint8),
+        cv2.RETR_CCOMP, cv2.CHAIN_APPROX_TC89_L1)
+
+    # create approximate contours to have reasonable submission size
+    approx_contours = [cv2.approxPolyDP(cnt, epsilon, True)
+                       for cnt in contours]
+
+    if not approx_contours:
+        return MultiPolygon()
+    # now messy stuff to associate parent and child contours
+    cnt_children = defaultdict(list)
+    child_contours = set()
+    assert hierarchy.shape[0] == 1
+    # http://docs.opencv.org/3.1.0/d9/d8b/tutorial_py_contours_hierarchy.html
+    for idx, (_, _, _, parent_idx) in enumerate(hierarchy[0]):
+        if parent_idx != -1:
+            child_contours.add(idx)
+            cnt_children[parent_idx].append(approx_contours[idx])
+    # create actual polygons filtering by area (removes artifacts)
+    all_polygons = []
+    for idx, cnt in enumerate(approx_contours):
+        if idx not in child_contours and cv2.contourArea(cnt) >= min_area:
+            assert cnt.shape[1] == 1
+            poly = Polygon(
+                shell=cnt[:, 0, :],
+                holes=[c[:, 0, :] for c in cnt_children.get(idx, [])
+                       if cv2.contourArea(c) >= min_area])
+            all_polygons.append(poly)
+    # approximating polygons might have created invalid ones, fix them
+    all_polygons = MultiPolygon(all_polygons)
+    if not all_polygons.is_valid:
+        all_polygons = all_polygons.buffer(0)
+        # need to re add in the check for type of all_polygons
+        all_polygons = MultiPolygon(all_polygons)
+    return all_polygons    
+    
+    
+dir_path =  r'C:\Users\trist\Documents\CS\3A\GRM\GRM_GraphCut\GRM_GraphCut\dataset\jpg_img'
 path = r'C:\Users\trist\Documents\CS\3A\GRM\GRM_GraphCut\GRM_GraphCut\dataset\6010_1_2.tif'
 ratio = 0.75
+
+
 jpg_path = '../dataset/jpg_img/6010_1_2.jpg'
+img_id = jpg_path.split('/')[-1].split('.')[0]
+
+
 
 #crop(path, ratio, jpg_path)
 
@@ -96,10 +167,17 @@ if not(os.path.exists(df_path)):
     Loader('train_wkt_dataset.csv',
             'grid_sizes_dataset.csv').save_final_df(out_path=df_path)
 
-dir_path =  r'C:\Users\trist\Documents\CS\3A\GRM\GRM_GraphCut\GRM_GraphCut\dataset\jpg_img'
 
 fit_poly(jpg_path, df_path, dir_path)
 
 df_poly = pd.read_csv(df_path)
+
+name = os.path.join(dir_path, img_id + 'red_poly.jpg')
+plot_poly(df_poly, 450, data_path='../dataset/tiff', out_path=name)
+jpg_poly = cv2.imread(name, cv2.IMREAD_GRAYSCALE)
+jpg_img = cv2.imread(jpg_path, cv2.IMREAD_GRAYSCALE)
+mask = cv2.absdiff(jpg_img, jpg_poly)
+
+polygones = mask_to_polygons(mask)
 
 
