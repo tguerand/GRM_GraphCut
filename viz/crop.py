@@ -54,7 +54,7 @@ def crop(tiff_img, ratio, out_path):
     # fig.savefig('figure.png', dpi=1)
 
 
-def fit_poly(img_path, df_path):
+def fit_poly(img_path, df_path, dir_path):
     """Match the polygone size to the jpg image
     
     Args
@@ -70,7 +70,7 @@ def fit_poly(img_path, df_path):
     img_id = img_path.split('.')[-2].split(r'/')[-1]
     
     for poly_idx in df['geom'][df['ImageId'] == img_id].index.tolist():
-        name = img_id + 'red_poly.jpg'
+        name = os.path.join(dir_path, img_id + 'red_poly.jpg')
         plot_poly(df, poly_idx, data_path='../dataset', out_path=name)
         jpg_poly = np.asarray(Image.open(name))
         mask = abs(jpg_img - jpg_poly)
@@ -96,13 +96,10 @@ if not(os.path.exists(df_path)):
     Loader('train_wkt_dataset.csv',
             'grid_sizes_dataset.csv').save_final_df(out_path=df_path)
 
-#fit_poly(jpg_path, df_path)
+dir_path =  r'C:\Users\trist\Documents\CS\3A\GRM\GRM_GraphCut\GRM_GraphCut\dataset\jpg_img'
+
+fit_poly(jpg_path, df_path, dir_path)
+
 df_poly = pd.read_csv(df_path)
 
-dir_path =  r'C:\Users\trist\Documents\CS\3A\GRM\GRM_GraphCut\GRM_GraphCut\dataset'
-
-for f in os.listdir(dir_path):
-    if f[-3:]=='tif':
-        name = r'jpg_img' + f[:-3]+'jpg'
-        crop(os.path.join(dir_path, f), ratio, name)
 
