@@ -12,5 +12,5 @@
 *.wmv
 
 # data
-dataset/
+dataset/tiff
 temp/
