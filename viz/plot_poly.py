@@ -12,6 +12,7 @@ import tifffile as tiff
 import numpy as np
 import pandas as pd
 import ast
+from tqdm import tqdm
 
 from matplotlib.patches import Circle, Wedge, Polygon
 from matplotlib.collections import PatchCollection
@@ -96,15 +97,57 @@ def plot_polys(df, class_type, img_id, data_path='dataset', out_path='out.png'):
     plt.savefig(out_path, bbox_inches='tight',pad_inches = 0)
     
     plt.show()
+    plt.clf()
     
+def plot_polys(df, class_type, img_id, data_path='dataset', out_path='out.png'):
+    """Plot all the polygons of a single image of a single class
     
+    Args
+    -----
+    df: pd.Dataframe
+        the data dataframe
+        Cols : ['ImageId', 'geom', 'ClassType', 'Xmax', 'Ymin']
+    class_type: int
+        the number id of the class to show
+    img_id: str
+        the id of the image
+    data_path: str
+        path where the dataset is stored
+    out_path: str
+        path where the output image is saved"""
+    polys = []
+    patches = []
     
+    for pol in df['geom'][(df['ImageId']==img_id) & (df['ClassType']==class_type)].values:
+        polys.append(ast.literal_eval(pol))
+    
+        patches.append(Polygon(polys[-1]))
+    
+    P = tiff.imread(os.path.join(data_path, img_id + '.tif'))
+    tiff.imshow(P)
+    
+    ax = plt.gca()
+    
+    colors = 100 * np.random.rand(len(patches))
+    p = PatchCollection(patches, alpha=0.4)
+    p.set_array(colors)
+    ax.add_collection(p)
+    
+    ax.set_axis_off()
+    
+    plt.savefig(out_path, bbox_inches='tight',pad_inches = 0)
+    
+    plt.show()
+    plt.clf()
+    
+
+
 
 if __name__ == '__main__':
 
 
     data_path = r'../dataset' 
-    df_path = r'../df/df_with_polygons_as_pixels.csv'
+    df_path = r'df_with_polygons_as_pixels.csv'
     
     if not(os.path.exists(df_path)):
         Loader('train_wkt_dataset.csv',
@@ -112,10 +155,14 @@ if __name__ == '__main__':
     
     df_poly = pd.read_csv(df_path)
     
-    image_id = '6100_2_2'
-    class_type = 1
     
-    plot_polys(df_poly, class_type, image_id, data_path=data_path)
+    ids = set(df_poly['ImageId'].tolist())
+    for image_id in tqdm(ids):
+        classes = set(df_poly['ClassType'][df_poly['ImageId'] == image_id].tolist())
+        for c in classes:
+            name = os.path.join(data_path, 'jpg_img', 'polys', 'new', image_id+'_'+str(c)+'.jpg')
+    
+            plot_polys(df_poly, c, image_id, data_path=data_path, out_path=name)
         
     # Cool images: 6100_2_2
     

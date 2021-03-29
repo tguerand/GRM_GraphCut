@@ -7,8 +7,8 @@ H = 3391
 
 
 def scale_x_and_y_coords_to_pixels(x: float, y: float, x_max: float, y_min: float):
-    w_prime = W*W/(W+1)
-    h_prime = H*H/(H+1)
+    h_prime = W*W/(W+1)
+    w_prime = H*H/(H+1)
 
     x_prime = x/x_max*w_prime
     y_prime = y/y_min*h_prime
@@ -70,7 +70,8 @@ class Loader:
         
         self.preprocess()
         
-        classes_to_keep = [1, 3, 4, 5]
+        #classes_to_keep = [1, 3, 4, 5]
+        classes_to_keep = [4,3, 7, 8]
         classes = range(1,11)
         
         for cl in classes:
@@ -78,9 +79,9 @@ class Loader:
                 continue
             idx = self.df.index[self.df['ClassType']==cl].tolist()
             self.df = self.df.drop(idx)
-        
-        self.df[['ImageId', 'geom', 'ClassType', 'Xmax', 'Ymin']].to_csv(out_path, index=False)
+        self.df['geom_red'] = self.df.index
+        self.df[['ImageId', 'geom', 'ClassType', 'Xmax', 'Ymin', 'geom_red']].to_csv(out_path, index=False)
 
 
 if __name__ == '__main__':
-    Loader('df/train_wkt_dataset.csv', 'df/grid_sizes_dataset.csv').save_final_df()
+    Loader(r'../df/train_wkt_dataset.csv', r'../df/grid_sizes_dataset.csv').save_final_df()
