@@ -20,7 +20,7 @@ class Graph:
         self.graph[node1][node2] = weight
 
 
-def create_graph_from_images(img_path, gamma, fore, back):
+def create_graph_from_images(img_path, gamma, fore, back, _datatype='pixels'):
     """
     Return graphs computed with source is foreground and sink is background
     :param img_path: Img path

@@ -13,6 +13,9 @@ import numpy as np
 from shapely.geometry import Polygon, MultiPolygon
 from collections import defaultdict
 
+import matplotlib.patches
+from matplotlib.collections import PatchCollection
+
 
 from tqdm import tqdm
 import os
@@ -150,11 +153,11 @@ def mask_to_polygons(mask, epsilon=1, min_area=1.):
     
     
 dir_path =  r'C:\Users\trist\Documents\CS\3A\GRM\GRM_GraphCut\GRM_GraphCut\dataset\jpg_img'
-path = r'C:\Users\trist\Documents\CS\3A\GRM\GRM_GraphCut\GRM_GraphCut\dataset\6010_1_2.tif'
+path = r'C:\Users\trist\Documents\CS\3A\GRM\GRM_GraphCut\GRM_GraphCut\dataset\6100_2_2.tif'
 ratio = 0.75
 
 
-jpg_path = '../dataset/jpg_img/6010_1_2.jpg'
+jpg_path = '../dataset/jpg_img/6100_2_2.jpg'
 img_id = jpg_path.split('/')[-1].split('.')[0]
 
 
@@ -168,16 +171,51 @@ if not(os.path.exists(df_path)):
             'grid_sizes_dataset.csv').save_final_df(out_path=df_path)
 
 
-fit_poly(jpg_path, df_path, dir_path)
+#fit_poly(jpg_path, df_path, dir_path)
 
-df_poly = pd.read_csv(df_path)
+df = pd.read_csv(df_path)
 
 name = os.path.join(dir_path, img_id + 'red_poly.jpg')
-plot_poly(df_poly, 450, data_path='../dataset/tiff', out_path=name)
+plot_poly(df, 450, data_path='../dataset/tiff', out_path=name)
 jpg_poly = cv2.imread(name, cv2.IMREAD_GRAYSCALE)
 jpg_img = cv2.imread(jpg_path, cv2.IMREAD_GRAYSCALE)
 mask = cv2.absdiff(jpg_img, jpg_poly)
 
-polygones = mask_to_polygons(mask)
+#polygones = mask_to_polygons(mask)
+
+
+polys = []
+patches = []
+
+class_type = 7
+
+for pol in df['geom_red'][(df['ImageId']==img_id) & (df['ClassType']==class_type)].values:
+    print(pol)
+    if pol == '[]':
+        continue
+    for poo in ast.literal_eval(pol):
+        
+        polys.append(poo)
+    
+        patches.append(matplotlib.patches.Polygon(polys[-1]))
+
+
+out_path = 'test.jpg'
+
+plt.imshow(jpg_img)
+
+ax = plt.gca()
+
+colors = 100 * np.random.rand(len(patches))
+p = PatchCollection(patches, alpha=0.4)
+p.set_array(colors)
+ax.add_collection(p)
+
+ax.set_axis_off()
+
+plt.savefig(out_path, bbox_inches='tight',pad_inches = 0)
+
+plt.show()
+plt.clf()
 
 

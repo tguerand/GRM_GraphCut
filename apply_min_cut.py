@@ -1,6 +1,16 @@
 from _collections import deque
 import numpy as np
 from numba import jit
+import itertools
+
+import graph as gr
+#from graph import create_graph_from_image
+import pandas as pd
+import os
+import cv2
+import networkx as nx
+
+
 
 gamma = 0.001
 fore = (225, 142, 279, 185)
@@ -77,3 +87,96 @@ def FordFulkerson(graph, source, sink):
             v = parent[v]
 
     return max_flow, graph_copy
+
+def alpha_beta_swap(img_path, nb_pixel_min_change, alphas, gamma=gamma):
+    """Performs the alphabeta swap graph cut algorithm
+    
+    Args
+    -----
+    img_path: str
+        the path of the image
+    nb_pixel_min_change: int
+        threshold
+    gamma: float
+        factor to compute on the exponential for weights between nodes
+        
+    """
+    alphabeta = []
+    for i in range(len(alphas)-1):
+        for j in range(i+1, len(alphas)):
+            alphabeta.append([alphas[i], alphas[j]])
+    
+    i = 0
+    conv = nb_pixel_min_change + 10
+    
+    img_id = os.path.split(img_path)[-1].split('.')[0]
+    img = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
+    
+    out_ = np.ones(img.shape) * alphabeta[-1][0]
+    
+    
+    
+    ##### TODO : il faut s occuper du label autre
+    # soit le créer dans la fonction, soit le faire en amont dans le code
+    
+    
+    
+    while conv > nb_pixel_min_change:
+        print(i)
+        alpha = alphabeta[i%len(alphabeta)][0]
+        beta = alphabeta[i%len(alphabeta)][1]
+        # define the list of pixels, now it is a rectangle --> mask
+        lbl_path_a = os.path.join(r'\dataset\jpg_img\polys', img_id + '_' + str(alpha) + '.jpg')
+        lbl_img_a = cv2.imread(lbl_path_a, cv2.IMREAD_GRAYSCALE)
+        mask_a = np.abs(img - lbl_img_a)
+    
+        mask_a[np.where(mask_a>0)]=1
+        
+        lbl_path_b = os.path.join(r'\dataset\jpg_img\polys', img_id + '_' + str(beta) + '.jpg')
+        lbl_img_b = cv2.imread(lbl_path_b, cv2.IMREAD_GRAYSCALE)
+        mask_b = np.abs(img - lbl_img_b)
+        mask_b[np.where(mask_b>0)]=1
+        
+        
+        g = gr.create_graph_from_images(img_path, gamma, mask_a, mask_b, _datatype='mask')
+        
+       
+        
+        m, n, _ = img.shape
+        # number_of_nodes method returns len of list
+        source_node = g.number_of_nodes() - 2
+        sink_node = g.number_of_nodes() - 1
+    
+        _, partition = nx.minimum_cut(g, source_node, sink_node)
+        reachable, non_reachable = partition
+    
+        output_img_a = np.zeros(img.shape)
+        output_img_b = np.zeros(img.shape)
+    
+        for i in range(m):
+            for j in range(n):
+                if i*n+j in non_reachable:
+                    output_img_a[i, j] = 0
+                    output_img_b[i, j] = 1
+                else:
+                    output_img_a[i, j] = 1
+                    output_img_b[i, j] = 0
+                    
+        
+        nb_a = np.sum(np.abs(mask_a - output_img_a))
+        
+        out_[np.where(output_img_a == 1)] = alpha
+        out_[np.where(output_img_b == 1)] = beta
+        conv  = nb_a
+        i += 1
+    return out_
+        
+    
+if __name__ == '__main__':
+    
+    img_path = os.path.join(r'C:\Users\trist\Documents\CS\3A\GRM\GRM_GraphCut\GRM_GraphCut\dataset\jpg_img',
+                            '6110_4_0.jpg')
+    nb_pixel_min_change = 1000
+    alphas = [3, 8, 100]
+    
+    out = alpha_beta_swap(img_path, nb_pixel_min_change, alphas)
