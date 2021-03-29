@@ -9,6 +9,10 @@ import tifffile as tiff
 import matplotlib.pyplot as plt
 import cv2
 import numpy as np
+import os
+import pandas as pd
+from plot_poly import plot_poly
+from loader import Loader
 
 def crop(tiff_img, ratio, out_path):
     """
@@ -36,9 +40,9 @@ def crop(tiff_img, ratio, out_path):
     ax = plt.gca()    
     ax.set_axis_off()
     
-    plt.savefig(out_path, bbox_inches='tight',pad_inches = 0, dpi=500)
+    plt.savefig(out_path, bbox_inches='tight',pad_inches = 0, dpi=1000)
     
-    plt.show()
+    #plt.show()
     # image = np.moveaxis(image, 0, -1)
     # fig = plt.figure(frameon=False)
     # fig.set_size_inches(w,h)
@@ -53,3 +57,13 @@ ratio = 0.75
 out_path = 'out.jpg'
 
 crop(path, ratio, out_path)
+
+# df_path = r'../df/df_with_polygons_as_pixels.csv'
+    
+# if not(os.path.exists(df_path)):
+#     Loader('train_wkt_dataset.csv',
+#            'grid_sizes_dataset.csv').save_final_df(out_path=df_path)
+
+# df_poly = pd.read_csv(df_path)
+
+# plot_poly(df, poly_idx, data_path='dataset', out_path='out.png')
