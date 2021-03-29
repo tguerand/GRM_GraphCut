@@ -1,93 +1,107 @@
-import cv2
 import numpy as np
-from PIL import Image
-
-from apply_min_cut import FordFulkerson
+import matplotlib.pyplot as plt
+import networkx as nx
 
 
 class Graph:
     def __init__(self, sink_node):
         self.source_node = sink_node - 1
         self.sink_node = sink_node
-        self.graph = np.zeros((sink_node + 1, sink_node + 1))
+        self.graph = nx.DiGraph()
         self.ROW = sink_node + 1
 
     def add_terminal_edge(self, node, source_weight, sink_weight):
-        self.graph[self.source_node][node] = source_weight
-        self.graph[node][self.sink_node] = sink_weight
+        self.graph.add_edge(self.source_node, node, capacity=source_weight)
+        self.graph.add_edge(node, self.sink_node, capacity=sink_weight)
 
     def add_edge(self, node1, node2, weight):
-        self.graph[node1][node2] = weight
+        self.graph.add_edge(node1, node2, capacity=weight)
 
 
-def create_graph_from_images(img_path, gamma, fore, back):
+def get_log_or_100(value):
+    return -np.log(value) if value != 0 else 100000
+
+
+def get_value_for_a_channel(pixels_value, channel):
+    return [pixel_value[channel] for pixel_value in pixels_value]
+
+
+def create_histogram_for_label(pixels_value):
+    hist_r, _ = np.histogram(get_value_for_a_channel(pixels_value, 0), density=True, bins=257,
+                             range=(0, 256))
+    hist_g, _ = np.histogram(get_value_for_a_channel(pixels_value, 1), density=True, bins=257,
+                             range=(0, 256))
+    hist_b, _ = np.histogram(get_value_for_a_channel(pixels_value, 2), density=True, bins=257,
+                             range=(0, 256))
+
+    #plt.plot(hist_r, color='red')
+    #plt.plot(hist_g, color='green')
+    #plt.plot(hist_b, color='blue')
+    #plt.show()
+
+    return hist_r, hist_g, hist_b
+
+
+def get_value_for_label(pixel, hist_r, hist_g, hist_b):
+    pdf_with_f = np.array([get_log_or_100(hist_r[pixel[0]]),
+                           get_log_or_100(hist_g[pixel[1]]),
+                           get_log_or_100(hist_b[pixel[2]])])
+    return np.sum(pdf_with_f)
+
+
+def get_pixels_value_from_coord_list(I, coord_list):
+    pixel_list = []
+    for coord in coord_list:
+        pixel_list.append(I[coord[0], coord[1]])
+    return np.array(pixel_list)
+
+
+def create_graph_from_images(I, gamma, fore_coord_list, back_coord_list):
     """
     Return graphs computed with source is foreground and sink is background
-    :param img_path: Img path
+    :param I: np array image
     :param gamma: factor to compute on the exponential for weights between nodes
-    :param fore: area of the foreground in the image to compute weight between node and source
-    :param back: area of the background in the image to compute weight between node and sink
-    :return:
+    :param fore_coord_list: list of pixels in the foreground
+    :param back_coord_list: list of pixels in the background
     """
-    I = Image.open(img_path).convert('L')  # read image
+    If = get_pixels_value_from_coord_list(I, fore_coord_list)  # take a part of the foreground
+    Ib = get_pixels_value_from_coord_list(I, back_coord_list)  # take a part of the background
 
-    If = np.array(I.crop(fore))  # take a part of the foreground
-    Ib = np.array(I.crop(back))  # take a part of the background
-    I = np.array(I)
+    # Create histograms for each pixel
+    hist_if_r, hist_if_g, hist_if_b = create_histogram_for_label(If)
+    hist_ib_r, hist_ib_g, hist_ib_b = create_histogram_for_label(Ib)
 
-    hist_if = cv2.calcHist([If], [0], None, [256], [0, 256])
-    hist_ib = cv2.calcHist([Ib], [0], None, [256], [0, 256])
-
-    Ifmean = np.argmax(hist_if)  # get argmax of the histogram for foreground
-    Ibmean = np.argmax(hist_ib)  # get argmax of the histogram for background
-
-    Im = I.copy().flatten().astype('int')  # Converting the image array to a vector for ease.
     m, n = I.shape[0], I.shape[1]  # copy the size
 
     graph = Graph(m*n+1)
 
     # Define the probability with background and foreground
-    F = np.zeros(I.shape)
-    B = np.zeros(I.shape)
+    F = np.zeros((m, n))
+    B = np.zeros((m, n))
 
-    for i in range(I.shape[0]):  # Defining the Probability function....
+    for i in range(I.shape[0]):
         for j in range(I.shape[1]):
-            diff_back = abs(I[i, j] - Ifmean)
-            diff_fore = abs(I[i, j] - Ibmean)
-            den = diff_back + diff_fore
 
-            # Probability of a pixel being foreground
-            if diff_fore > 0:
-                F[i, j] = -np.log(diff_fore / den)
-            else:
-                F[i, j] = 100
+            # Taking pixel values in hist
+            pixel = I[i, j]
+            F[i, j] = get_value_for_label(pixel, hist_if_r, hist_if_g, hist_if_b)
+            # F[i, j] = get_log_or_100(hist_f, pixel)
+            # B[i, j] = get_log_or_100(hist_, pixel)
+            B[i, j] = get_value_for_label(pixel, hist_ib_r, hist_ib_g, hist_ib_b)
 
-            # Probability of a pixel being background
-            if diff_back > 0:
-                B[i, j] = -np.log(diff_back / den)
-            else:
-                B[i, j] = 100
+    for i in range(m):  # checking the 4-neighborhood pixels
+        for j in range(n):
+            node = i*n+j
+            ws = F[i, j]
+            wt = B[i, j]
+            graph.add_terminal_edge(node, ws, wt)
 
-    F, B = F.flatten(), B.flatten()  # convertingb  to column vector for ease
+            pixels_to_update = [(i, j-1), (i, j+1), (i-1, j), (i+1, j)]
 
-    for i in range(m * n):  # checking the 4-neighborhood pixels
-        ws = (F[i] / (F[i] + B[i]))  # source weight
-        wt = (B[i] / (F[i] + B[i]))  # sink weight
-        graph.add_terminal_edge(i, ws, wt)
-
-        pixels_to_update = [i - 1, i + 1, i - n, i + n]
-
-        for pixel_to_update in pixels_to_update:
-            if 0 <= pixel_to_update < m * n:
-                weight = np.exp(-gamma * (abs(Im[i] - Im[pixel_to_update]) ** 2))
-                graph.add_edge(i, pixel_to_update, weight)
+            for pixel_to_update in pixels_to_update:
+                node_pixel = pixel_to_update[0]*n + pixel_to_update[1]
+                if 0 <= pixel_to_update[0] < m and 0 <= pixel_to_update[1] < n:
+                    weight = 100*np.exp(-gamma * (np.linalg.norm(I[i, j] - I[pixel_to_update]) ** 2))
+                    graph.add_edge(node, node_pixel, weight)
 
     return graph
-
-
-if __name__ == '__main__':
-    gamma = 0.001
-    fore = (225, 142, 279, 185)
-    back = (7, 120, 61, 163)
-    g = create_graph_from_images('input1.jpeg', gamma, fore, back)
-    print(FordFulkerson(g.graph, len(g.graph[0])-2, len(g.graph[0])-1))

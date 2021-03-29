@@ -1,19 +1,18 @@
-from _collections import deque
 import numpy as np
-from numba import jit
+import networkx as nx
 
 gamma = 0.001
 fore = (225, 142, 279, 185)
 back = (7, 120, 61, 163)
 
-@jit(nopython=True)
+
 def BFS(graph, s, t, parent):
     # Mark all the vertices as not visited
     ROW = len(graph[0])
     visited = [False] * ROW
 
     # Create a queue for BFS
-    queue = deque(s)
+    queue = [s]
 
     # Mark the source node as visited and enqueue it
     visited[s] = True
@@ -22,7 +21,7 @@ def BFS(graph, s, t, parent):
     while queue:
 
         # Dequeue a vertex from queue and print it
-        u = queue.popleft()
+        u = s.pop(0)
 
         # Get all adjacent vertices of the dequeued vertex u
         # If a adjacent has not been visited, then mark it
@@ -36,7 +35,7 @@ def BFS(graph, s, t, parent):
     # If we reached sink in BFS starting from source, then return true, else false
     return True if visited[t] else False
 
-@jit(nopython=True)
+
 def FordFulkerson(graph, source, sink):
     """
     :param graph: graph with nodes and edges from create_graph_from_images
@@ -49,7 +48,7 @@ def FordFulkerson(graph, source, sink):
     len_rows = len(graph_copy[0])
 
     # This array is filled by BFS and to store path
-    parent = np.array([-1 for _ in range(len_rows)])
+    parent = np.zeros(len_rows) - 1
 
     max_flow = 0  # There is no flow initially
 
@@ -77,3 +76,9 @@ def FordFulkerson(graph, source, sink):
             v = parent[v]
 
     return max_flow, graph_copy
+
+
+def apply_min_cut(graph: nx.DiGraph, source_node, sink_node):
+    min_cut, partition = nx.minimum_cut(graph, source_node, sink_node)
+    print(f'Min cut is {min_cut}')
+    return partition
