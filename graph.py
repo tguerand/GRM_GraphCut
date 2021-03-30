@@ -34,10 +34,11 @@ def create_histogram_for_label(pixels_value):
     hist_b, _ = np.histogram(get_value_for_a_channel(pixels_value, 2), density=True, bins=257,
                              range=(0, 256))
 
-    #plt.plot(hist_r, color='red')
-    #plt.plot(hist_g, color='green')
-    #plt.plot(hist_b, color='blue')
-    #plt.show()
+    plt.plot(hist_r, color='red')
+    plt.plot(hist_g, color='green')
+    plt.plot(hist_b, color='blue')
+    plt.show()
+    plt.clf()
 
     return hist_r, hist_g, hist_b
 
@@ -67,6 +68,17 @@ def create_graph_from_images(I, gamma, fore_coord_list, back_coord_list, _polys=
     if _polys=='single':
     
         If = get_pixels_value_from_coord_list(I, fore_coord_list)  # take a part of the foreground
+        Ib = get_pixels_value_from_coord_list(I, back_coord_list)  # take a part of the background
+    elif _polys == 'binary':
+        Ifs = []
+        
+        for fp in fore_coord_list:
+            Ifs.append(get_pixels_value_from_coord_list(I, fp))
+                
+        If = []
+        for i in range(len(Ifs)):
+            for j in range(len(Ifs[i])):
+                If.append(Ifs[i][j])
         Ib = get_pixels_value_from_coord_list(I, back_coord_list)  # take a part of the background
     else:
         Ifs = []
