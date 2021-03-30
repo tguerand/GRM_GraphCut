@@ -109,7 +109,7 @@ def fit_poly(img_path, df_path, dir_path, threshold=25):
 
   
     
-def mask_to_polygons(mask, epsilon=1, min_area=1.):
+def mask_to_polygons(mask, epsilon=0.5, min_area=1.):
     # __author__ = Konstantin Lopuhin
     # https://www.kaggle.com/lopuhin/dstl-satellite-imagery-feature-detection/full-pipeline-demo-poly-pixels-ml-poly
 
@@ -151,71 +151,93 @@ def mask_to_polygons(mask, epsilon=1, min_area=1.):
         all_polygons = MultiPolygon(all_polygons)
     return all_polygons    
     
+
+def shapely_to_xy(all_polygons):
     
-dir_path =  r'C:\Users\trist\Documents\CS\3A\GRM\GRM_GraphCut\GRM_GraphCut\dataset\jpg_img'
-path = r'C:\Users\trist\Documents\CS\3A\GRM\GRM_GraphCut\GRM_GraphCut\dataset\6100_2_2.tif'
-ratio = 0.75
+    polys = list(all_polygons)
+    for i in range(len(polys)):
+        polys[i] = polys[i].exterior.coords.xy
+        polys[i] = [ [int(polys[i][0][j]),
+                      int(polys[i][1][j]) ] for j in range(len( polys[i][0]))]
+    return polys
 
 
-jpg_path = '../dataset/jpg_img/6100_2_2.jpg'
-img_id = jpg_path.split('/')[-1].split('.')[0]
+if __name__ == '__main__':
 
-
-
-#crop(path, ratio, jpg_path)
-
-df_path = r'../df/df_with_polygons_as_pixels.csv'
     
-if not(os.path.exists(df_path)):
-    Loader('train_wkt_dataset.csv',
-            'grid_sizes_dataset.csv').save_final_df(out_path=df_path)
-
-
-#fit_poly(jpg_path, df_path, dir_path)
-
-df = pd.read_csv(df_path)
-
-name = os.path.join(dir_path, img_id + 'red_poly.jpg')
-plot_poly(df, 450, data_path='../dataset/tiff', out_path=name)
-jpg_poly = cv2.imread(name, cv2.IMREAD_GRAYSCALE)
-jpg_img = cv2.imread(jpg_path, cv2.IMREAD_GRAYSCALE)
-mask = cv2.absdiff(jpg_img, jpg_poly)
-
-#polygones = mask_to_polygons(mask)
-
-
-polys = []
-patches = []
-
-class_type = 7
-
-for pol in df['geom_red'][(df['ImageId']==img_id) & (df['ClassType']==class_type)].values:
-    print(pol)
-    if pol == '[]':
-        continue
-    for poo in ast.literal_eval(pol):
+    dir_path =  r'C:\Users\trist\Documents\CS\3A\GRM\GRM_GraphCut\GRM_GraphCut\dataset\jpg_img'
+    path = r'C:\Users\trist\Documents\CS\3A\GRM\GRM_GraphCut\GRM_GraphCut\dataset\6100_2_2.tif'
+    ratio = 0.75
+    
+    
+    jpg_path = '../dataset/jpg_img/6110_4_0.jpg'
+    img_id = jpg_path.split('/')[-1].split('.')[0]
+    class_type = 3
+    
+    
+    #crop(path, ratio, jpg_path)
+    
+    df_path = r'../df/df_with_polygons_as_pixels.csv'
         
-        polys.append(poo)
+    if not(os.path.exists(df_path)):
+        Loader('train_wkt_dataset.csv',
+                'grid_sizes_dataset.csv').save_final_df(out_path=df_path)
     
-        patches.append(matplotlib.patches.Polygon(polys[-1]))
-
-
-out_path = 'test.jpg'
-
-plt.imshow(jpg_img)
-
-ax = plt.gca()
-
-colors = 100 * np.random.rand(len(patches))
-p = PatchCollection(patches, alpha=0.4)
-p.set_array(colors)
-ax.add_collection(p)
-
-ax.set_axis_off()
-
-plt.savefig(out_path, bbox_inches='tight',pad_inches = 0)
-
-plt.show()
-plt.clf()
-
-
+    
+    #fit_poly(jpg_path, df_path, dir_path)
+    
+    df = pd.read_csv(df_path)
+    
+    name = os.path.join(dir_path,'polys', img_id + '_'+ str(class_type) + '.jpg')
+    #plot_poly(df, 450, data_path='../dataset/tiff', out_path=name)
+    jpg_poly = cv2.imread(name, cv2.IMREAD_GRAYSCALE)
+    jpg_img = cv2.imread(jpg_path, cv2.IMREAD_GRAYSCALE)
+    mask = cv2.absdiff(jpg_img, jpg_poly)
+    mask[np.where(mask > 0)] = 1
+    plt.imshow(mask)
+    plt.show()
+    
+    polygones = list(mask_to_polygons(mask))
+    polygones = mask_to_polygons(mask) 
+    polys = list(polygones)
+    for i in range(len(polys)):
+        polys[i] = polys[i].exterior.coords.xy
+        polys[i] = [ [int(polys[i][0][j]),
+                      int(polys[i][1][j]) ] for j in range(len( polys[i][0]))]
+    
+    
+    #polys = []
+    patches = [matplotlib.patches.Polygon(i) for i in polys]
+    
+    
+    
+    # for pol in df['geom_red'][(df['ImageId']==img_id) & (df['ClassType']==class_type)].values:
+    #     print(pol)
+    #     if pol == '[]':
+    #         continue
+    #     for poo in ast.literal_eval(pol):
+            
+    #         polys.append(poo)
+        
+    #         patches.append(matplotlib.patches.Polygon(polys[-1]))
+    
+    
+    out_path = 'test.jpg'
+    
+    plt.imshow(jpg_img)
+    
+    ax = plt.gca()
+    
+    colors = 100 * np.random.rand(len(patches))
+    p = PatchCollection(patches, alpha=0.4)
+    p.set_array(colors)
+    ax.add_collection(p)
+    
+    ax.set_axis_off()
+    
+    plt.savefig(out_path, bbox_inches='tight',pad_inches = 0)
+    
+    plt.show()
+    plt.clf()
+    
+    
