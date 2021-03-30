@@ -204,6 +204,11 @@ def alpha_beta_swap(img_path, nb_pixel_min_change, alphas, gamma=gamma):
         count += 1
     return out_
         
+
+def apply_min_cut(graph: nx.DiGraph, source_node, sink_node):
+    min_cut, partition = nx.minimum_cut(graph, source_node, sink_node)
+    print(f'Min cut is {min_cut}')
+    return partition
     
 if __name__ == '__main__':
     
