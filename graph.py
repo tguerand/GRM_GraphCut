@@ -56,7 +56,7 @@ def get_pixels_value_from_coord_list(I, coord_list):
     return np.array(pixel_list)
 
 
-def create_graph_from_images(I, gamma, fore_coord_list, back_coord_list):
+def create_graph_from_images(I, gamma, fore_coord_list, back_coord_list, _polys='single'):
     """
     Return graphs computed with source is foreground and sink is background
     :param I: np array image
@@ -64,9 +64,30 @@ def create_graph_from_images(I, gamma, fore_coord_list, back_coord_list):
     :param fore_coord_list: list of pixels in the foreground
     :param back_coord_list: list of pixels in the background
     """
-    If = get_pixels_value_from_coord_list(I, fore_coord_list)  # take a part of the foreground
-    Ib = get_pixels_value_from_coord_list(I, back_coord_list)  # take a part of the background
-
+    
+    if _polys=='single':
+    
+        If = get_pixels_value_from_coord_list(I, fore_coord_list)  # take a part of the foreground
+        Ib = get_pixels_value_from_coord_list(I, back_coord_list)  # take a part of the background
+    else:
+        Ifs = []
+        Ibs = []
+        for fp in fore_coord_list:
+            Ifs.append(get_pixels_value_from_coord_list(I, fp))
+            
+        for bp in back_coord_list:
+            Ibs.append(get_pixels_value_from_coord_list(I, bp))
+        
+        If = []
+        for i in range(len(Ifs)):
+            for j in range(len(Ifs[i])):
+                If.append(Ifs[i][j])
+        Ib = []
+        for i in range(len(Ibs)):
+            for j in range(len(Ibs[i])):
+                Ib.append(Ibs[i][j])
+    
+    
     # Create histograms for each pixel
     hist_if_r, hist_if_g, hist_if_b = create_histogram_for_label(If)
     hist_ib_r, hist_ib_g, hist_ib_b = create_histogram_for_label(Ib)
