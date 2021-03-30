@@ -22,8 +22,8 @@ import os
 import pandas as pd
 import ast
 
-from plot_poly import plot_poly
-from loader import Loader
+#import plot_poly
+#from loader import Loader
 
 def crop(tiff_img, ratio, out_path):
     """
@@ -84,7 +84,7 @@ def fit_poly(img_path, df_path, dir_path, threshold=25):
     
     for poly_idx in tqdm(df['geom'][df['ImageId'] == img_id].index.tolist()):
         name = os.path.join(dir_path, img_id + 'red_poly.jpg')
-        plot_poly(df, poly_idx, data_path='../dataset/tiff', out_path=name)
+        plot_poly.plot_poly(df, poly_idx, data_path='../dataset/tiff', out_path=name)
         jpg_poly = cv2.imread(name, cv2.IMREAD_GRAYSCALE)
         mask = cv2.absdiff(jpg_img, jpg_poly)
         

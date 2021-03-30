@@ -145,7 +145,7 @@ def alpha_beta_swap(img_path, nb_pixel_min_change, alphas, gamma=gamma):
     ##### TODO : il faut s occuper du label autre
     # soit le créer dans la fonction, soit le faire en amont dans le code
     
-    
+    print('nb of pixel minimum to change: {}'.format(nb_pixel_min_change))
     
     while conv > nb_pixel_min_change:
         print(count)
@@ -199,8 +199,8 @@ def alpha_beta_swap(img_path, nb_pixel_min_change, alphas, gamma=gamma):
         out_[np.where(output_img_a == 1)] = alpha
         out_[np.where(output_img_b == 1)] = beta
         conv  = nb_a
-        print('conv : {}'.format(conv))
-        print('nb of pixel to change: {}'.format(conv))
+        print('We changed : {} pixels'.format(conv))
+        
         count += 1
     return out_
         
